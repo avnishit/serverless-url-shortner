@@ -1,0 +1,30 @@
+[ignore]
+<PROJECT_ROOT>/node_modules/config-chain/test/broken.json
+<PROJECT_ROOT>/node_modules/npm/node_modules/config-chain/test/
+<PROJECT_ROOT>/node_modules/cfn-lint/testData/*
+<PROJECT_ROOT>/node_modules/graphql/*
+<PROJECT_ROOT>/node_modules/findup/.*
+<PROJECT_ROOT>/node_modules/cfn-lint/.*
+<PROJECT_ROOT>/node_modules/config-chain/test/.*
+<PROJECT_ROOT>/node_modules/amplify-graphql-docs-generator/.*
+<PROJECT_ROOT>/node_modules/grunt-aws-lambda/.*
+<PROJECT_ROOT>/node_modules/amplify-graphql-types-generator/.*
+<PROJECT_ROOT>/node_modules/npm/test/fixtures/config/.*
+<PROJECT_ROOT>/log/.*
+.*.serverless/.*
+
+
+[libs]
+./flow-typed-local
+
+[options]
+suppress_comment= \\(.\\|\n\\)*\\$FlowIgnore
+suppress_comment= \\(.\\|\n\\)*\\$FlowFixMe
+module.file_ext=.gql
+module.file_ext=.json
+module.file_ext=.js
+module.file_ext=.jsx
+module.use_strict=true
+experimental.const_params=true
+module.name_mapper='^~/\(.*\)$' -> '<PROJECT_ROOT>/src/\1'
+

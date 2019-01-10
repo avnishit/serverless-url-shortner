@@ -1,0 +1,25 @@
+[
+  {
+    "Jest Test": {
+      "prefix": "jesttest",
+      "body": [
+        "/**",
+        "* @author Philipp Beau <philipp@dathuis.nl>",
+        "*",
+        "*/",
+        "/* @flow */",
+        "",
+        "",
+        "import ${1} from '../${1}';",
+        "",
+        "describe('${1}', () => {",
+        "\tit('Fill in test', () => {",
+        "\t\tconst result = ${1}()",
+        "\t\texpect(result).toMatchSnapshot();",
+        "\t});",
+        "});"
+      ],
+      "description": "Create a jest testcase"
+    }
+  }
+]

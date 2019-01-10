@@ -1,0 +1,317 @@
+image: dathuis/awscli-node:8.10
+
+variables:
+  AWS_ACCESS_KEY_ID: $DEV_AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: $DEV_AWS_SECRET_ACCESS_KEY
+
+cache:
+  key: &cacheKey ${CI_COMMIT_REF_SLUG}
+  paths: &cachePath
+    - .npm
+    - node_modules
+
+.cachePolicyPull: &pullCache
+  cache:
+    key: *cacheKey
+    paths: *cachePath
+    policy: pull
+
+stages:
+  - install
+  - testAndPackage
+  # - deployQA
+  # - testQA
+  # - removeQA
+  # - deployIssue
+  # - deployDev
+  # - deployStaging
+  # - deployProduction
+
+npmInstall:
+  stage: install
+  script:
+    - npm install
+  artifacts:
+    paths:
+      - package.json
+      # Include for cleanup of issue stages where we are not using git ( branch might be removed )
+      # @see closeIssue
+      - scripts/*
+      - src/*/serverless.js
+      - src/*/serverless.yml
+      # Include all vtl templates so the serverless.js file can be used
+      - src/serverless*.js
+
+lint:
+  stage: testAndPackage
+  <<: *pullCache
+  script:
+    - npm run lint
+
+unittesting:
+  stage: testAndPackage
+  <<: *pullCache
+  services:
+    - name: amazon/dynamodb-local
+      entrypoint:
+        [
+          'java',
+          '-Djava.library.path=./DynamoDBLocal_lib',
+          '-jar',
+          'DynamoDBLocal.jar',
+          '-sharedDb',
+        ]
+  script:
+    - DYNAMO_DB_HOST=amazon-dynamodb-local npm test
+
+# We do not want to use environments for the qa and packaging steps,
+# this will just clutter up gitlab and makes it unclear which dependency is deployed.
+.environment_qa:
+  stage: &qaStage export STAGE_NAME=qa$CI_PIPELINE_IID
+
+.environment_issue:
+  # Issue stages follow the format i + GITLAB_ISSUENUMBER e.g. issue 34 -> i34
+  stage: &issueStage export STAGE_NAME=i$(echo $CI_COMMIT_REF_SLUG | egrep -o '[0-9]+' -m 1 | head -n 1)
+  environment: &environment_issue
+    name: &environment_issue_name issue/$CI_COMMIT_REF_NAME
+    url: &environment_issue_url https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.dathuis.nl
+  only: &issue_branch
+    - /^[0-9]+-.*$/
+
+.environment_dev:
+  stage: &devStage export STAGE_NAME=dev
+  environment: &environment_dev
+    name: dev
+    url: https://dev.dathuis.nl
+
+.environment_test_dev:
+  stage: &testDevStage export STAGE_NAME=testdev
+  environment: &environment_test_dev
+    name: testdev
+    url: https://testdev.dathuis.nl
+
+.environment_staging:
+  stage: &stagingStage export STAGE_NAME=staging
+  environment: &environment_staging
+    name: staging
+    url: https://staging.dathuis.nl
+
+.environment_production:
+  stage: &productionStage export STAGE_NAME=prod
+  environment: &environment_production
+    name: production
+    url: https://app.dathuis.nl
+
+# PACKAGE all the serverless projects.
+# Different stages are packaged individualy, if there is a naming conflict that should break
+.packageService: &packageService
+  stage: testAndPackage
+  <<: *pullCache
+  artifacts:
+    paths:
+      - src/*/.serverless
+
+packageQA:
+  <<: *packageService
+  script:
+    - *qaStage
+    - npm run sls:package -- --stage $STAGE_NAME
+    - npm run cfn-lint
+
+packageIssue:
+  <<: *packageService
+  script:
+    - *issueStage
+    - npm run sls:package -- --stage $STAGE_NAME
+    - npm run cfn-lint
+  only: *issue_branch
+  except:
+    - master
+
+packageDev:
+  <<: *packageService
+  script:
+    - *devStage
+    - npm run sls:package -- --stage $STAGE_NAME
+    - npm run cfn-lint
+
+packageTestDev:
+  <<: *packageService
+  script:
+    - *testDevStage
+    - npm run sls:package -- --stage $STAGE_NAME
+    - npm run cfn-lint
+
+packageStaging:
+  <<: *packageService
+  script:
+    - *stagingStage
+    - npm run sls:package -- --stage $STAGE_NAME
+    - npm run cfn-lint
+
+packageProduction:
+  <<: *packageService
+  script:
+    - *productionStage
+    - npm run sls:package -- --stage $STAGE_NAME
+    - npm run cfn-lint
+####################################################
+#   EVERYTHING BELOW IS DISABLED FOR THIS PROJECT  #
+#           BUT CAN BE ENABLED IF YOU WANT         #
+####################################################
+
+# Bring a copy of the infrastructure live, check if all works
+# DISABLED IN THIS PROJECT
+# deployQA:
+#   stage: deployQA
+#   <<: *pullCache
+#   dependencies:
+#     - packageQA
+#   script:
+#     - *qaStage
+#     - npm run sls:deploy -- --stage $STAGE_NAME
+#   artifacts:
+#     paths:
+#       # Only hand over the cf values of the QA stage, the rest could be
+#       # a security issue.
+#       - src/*/cf-values.json
+
+# DISABLED IN THIS PROJECT
+# testOnQA:
+#   stage: testQA
+#   <<: *pullCache
+#   variables:
+#     # Remove the variables so that we can make sure NOT to use those as the USER
+#     # @see https://github.com/awslabs/aws-mobile-appsync-sdk-js/issues/300
+#     # AWS_ACCESS_KEY_ID: ''
+#     # AWS_SECRET_ACCESS_KEY: ''
+#   dependencies:
+#     - deployQA
+#   script:
+#     - *qaStage
+#     - STAGE_NAME=$STAGE_NAME npm run integrationtest
+
+# DISABLED IN THIS PROJECT
+# removeQA:
+#   stage: removeQA
+#   <<: *pullCache
+#   dependencies:
+#     - npmInstall
+#     - packageQA
+#   script:
+#     - *qaStage
+#     - npm run sls:remove -- --stage $STAGE_NAME
+#   when: always
+
+# DEPLOYMENT - Dev, Staging, Production and Issues
+
+# Issue Branch
+# DISABLED IN THIS PROJECT
+# deployIssue:
+#   stage: deployIssue
+#   <<: *pullCache
+#   environment:
+#     name: *environment_issue_name
+#     url: *environment_issue_url
+#     on_stop: closeIssue
+#   script:
+#     - *issueStage
+#     - npm run sls:deploy -- --stage $STAGE_NAME
+#     - npm run sls:info -- --stage $STAGE_NAME --verbose
+#   dependencies:
+#     - packageIssue
+#   only: *issue_branch
+#   except:
+#     - master
+
+# Close issue branch on merge
+# DISABLED IN THIS PROJECT
+# closeIssue:
+#   stage: deployIssue
+#   <<: *pullCache
+#   environment:
+#     name: *environment_issue_name
+#     url: *environment_issue_url
+#     action: stop
+#   dependencies:
+#     - npmInstall
+#     - packageIssue
+#   variables:
+#     GIT_STRATEGY: none
+#   script:
+#     - *issueStage
+#     - npm run sls:remove -- --stage $STAGE_NAME
+#   when: manual
+#   only: *issue_branch
+#   except:
+#     - master
+
+# Deploy to Dev
+# DISABLED IN THIS PROJECT
+# deployDev:
+#   stage: deployDev
+#   <<: *pullCache
+#   environment: *environment_dev
+#   dependencies:
+#     - packageDev
+#   script:
+#     - *devStage
+#     - npm run sls:deploy -- --stage $STAGE_NAME
+#     - npm run sls:info -- --stage $STAGE_NAME --verbose
+#   only:
+#     - master
+
+# Depoy to testdev ( Used by the frontend integration tests )
+# DISABLED IN THIS PROJECT
+# deployTestDev:
+#   stage: deployDev
+#   <<: *pullCache
+#   environment: *environment_test_dev
+#   dependencies:
+#     - packageTestDev
+#   script:
+#     - *testDevStage
+#     - npm run sls:deploy -- --stage $STAGE_NAME
+#     - npm run sls:info -- --stage $STAGE_NAME --verbose
+#   only:
+#     - master
+
+# Deploy to Staging
+# DISABLED IN THIS PROJECT
+# deployStaging:
+#   stage: deployStaging
+#   <<: *pullCache
+#   variables:
+#     AWS_ACCESS_KEY_ID: $STAGING_AWS_ACCESS_KEY_ID
+#     AWS_SECRET_ACCESS_KEY: $STAGING_AWS_SECRET_ACCESS_KEY
+#   environment: *environment_staging
+#   dependencies:
+#     - packageStaging
+#   script:
+#     - *stagingStage
+#     - npm run sls:deploy -- --stage $STAGE_NAME
+#     - npm run sls:info -- --stage $STAGE_NAME --verbose
+#   when: manual
+#   allow_failure: false
+#   only:
+#     - master
+
+# Deploy to production
+# DISABLED IN THIS PROJECT
+# deployProduction:
+#   stage: deployProduction
+#   <<: *pullCache
+#   variables:
+#     AWS_ACCESS_KEY_ID: $PRODUCTION_AWS_ACCESS_KEY_ID
+#     AWS_SECRET_ACCESS_KEY: $PRODUCTION_AWS_SECRET_ACCESS_KEY
+#   environment: *environment_production
+#   dependencies:
+#     - packageProduction
+#   script:
+#     - *productionStage
+#     - npm run sls:deploy -- --stage $STAGE_NAME
+#     - npm run sls:info -- --stage $STAGE_NAME --verbose
+#   when: manual
+#   allow_failure: false
+#   only:
+#     - master

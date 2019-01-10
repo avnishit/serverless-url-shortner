@@ -1,0 +1,68 @@
+service: ${self:custom.project.name}
+
+provider:
+  name: aws
+  stage: ${file(./serverless.js):provider.stage}
+  stackName: ${file(./serverless.js):project.stackName}
+  runtime: ${file(./serverless.js):provider.runtime}
+  region: ${file(./serverless.js):provider.region}
+  deploymentBucket:
+    name: ${file(./serverless.js):provider.deploymentBucket.name}
+
+plugins:
+  - '@dathuis/serverless-dynamodb-local'
+  - serverless-offline
+
+custom:
+  project: ${file(./serverless.js):project}
+
+  webpack:
+    packagePath: '../../package.json'
+    webpackConfig: 'webpack.config.js'
+    includeModules: false
+    packager: 'npm'
+
+  dynamodb:
+    start:
+      host: ${env:DYNAMO_DB_HOST, 'localhost'}
+      noStart: true
+      port: 8000
+      migrate: true
+
+resources:
+  Resources:
+    TableName:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${file(./serverless.js):Tables.TableName.name}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: 'id'
+            AttributeType: 'S'
+          # Here you can add a range key to the dynamodb tables primary key.
+          # - AttributeName: 'rangeKey'
+          #   AttributeType: 'S'
+          - AttributeName: 'GSI_1_PK'
+            AttributeType: 'S'
+          - AttributeName: 'GSI_1_SK'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'id'
+            KeyType: 'HASH'
+        # - AttributeName: 'rangeKey'
+        #   KeyType: 'RANGE'
+        GlobalSecondaryIndexes:
+          - IndexName: ${file(./serverless.js):Tables.TableName.index.GSI_1}
+            KeySchema:
+              - AttributeName: 'GSI_1_PK'
+                KeyType: 'HASH'
+              - AttributeName: 'GSI_1_SK'
+                KeyType: 'RANGE'
+            Projection:
+              ProjectionType: 'ALL'
+
+  Outputs:
+    TableNameARN:
+      Value: { 'Fn::GetAtt': [TableName, Arn] }
+      Export:
+        Name: ${file(./serverless.js):Exports.TableNameARN}

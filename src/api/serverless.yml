@@ -1,0 +1,52 @@
+service: ${self:custom.project.name}
+
+provider:
+  name: aws
+  stage: ${file(./serverless.js):provider.stage}
+  stackName: ${file(./serverless.js):project.stackName}
+  runtime: ${file(./serverless.js):provider.runtime}
+  region: ${file(./serverless.js):provider.region}
+  deploymentBucket:
+    name: ${file(./serverless.js):provider.deploymentBucket.name}
+  iamRoleStatements: # permissions for all of your functions can be set here
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource:
+        - Fn::ImportValue: ${file(./serverless.js):Imports.TableNameARN}
+        - Fn::Join:
+            - ''
+            - - Fn::ImportValue: ${file(./serverless.js):Imports.TableNameARN}
+              - '/*'
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+
+custom:
+  project: ${file(./serverless.js):project}
+
+  webpack:
+    packagePath: '../../package.json'
+    webpackConfig: 'webpack.config.js'
+    includeModules: false
+    packager: 'npm'
+
+functions:
+  insertItem:
+    handler: functions/insertItem/index.handler
+    events:
+      - http:
+          path: insertItem
+          method: post
+    memorySize: 3008
+    timeout: 5
+
+  getItem:
+    handler: functions/getItem/index.handler
+    events:
+      - http:
+          path: getItem
+          method: get
+    memorySize: 3008
+    timeout: 5

@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.serverless
+.webpack
+.DS_Store
+cf-values.json
+dist
+private
+log/*
+coverage
+__test_server__
