@@ -1,4 +1,6 @@
 service: ${self:custom.project.name}
+app: ${file(./serverless.js):project.app}
+tenant: ${file(./serverless.js):project.tenant}
 
 provider:
   name: aws
@@ -37,29 +39,50 @@ resources:
         TableName: ${file(./serverless.js):Tables.TableName.name}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: 'id'
+          - AttributeName: 'hash'
             AttributeType: 'S'
+          - AttributeName: 'sort_key'
+            AttributeType: 'S'
+          #- AttributeName : 'url'
+          #  AttributeType: 'S'
+          - AttributeName: 'base_url'
+            AttributeType: 'S'
+          #- AttributeName : 'cre_at'
+          #  AttributeType: 'S'
+          #- AttributeName : 'req_ip'
+          #  AttributeType: 'S'
+          #- AttributeName : 'req_at'
+          #  AttributeType: 'S'
           # Here you can add a range key to the dynamodb tables primary key.
           # - AttributeName: 'rangeKey'
           #   AttributeType: 'S'
-          - AttributeName: 'GSI_1_PK'
-            AttributeType: 'S'
-          - AttributeName: 'GSI_1_SK'
-            AttributeType: 'S'
+          #- AttributeName: 'GSI_1_PK'
+          #  AttributeType: 'S'
+          #- AttributeName: 'GSI_1_SK'
+          #  AttributeType: 'S'
         KeySchema:
-          - AttributeName: 'id'
+          - AttributeName: 'hash'
             KeyType: 'HASH'
-        # - AttributeName: 'rangeKey'
-        #   KeyType: 'RANGE'
+          - AttributeName: 'sort_key' # does this really help
+            KeyType: 'RANGE'
         GlobalSecondaryIndexes:
           - IndexName: ${file(./serverless.js):Tables.TableName.index.GSI_1}
             KeySchema:
-              - AttributeName: 'GSI_1_PK'
+              - AttributeName: 'base_url'
                 KeyType: 'HASH'
-              - AttributeName: 'GSI_1_SK'
-                KeyType: 'RANGE'
+              #- AttributeName: 'url'
+              #  KeyType: 'RANGE'
             Projection:
-              ProjectionType: 'ALL'
+              ProjectionType: 'ALL' #TBD
+        #LocalSecondaryIndexes:
+        #  - IndexName: ${file(./serverless.js):Tables.TableName.index.LSI_1}
+        #    KeySchema:
+        #      - AttributeName: 'req_id'
+        #        KeyType: RANGE
+        #  - IndexName: ${file(./serverless.js):Tables.TableName.index.LSI_2}
+        #    KeySchema:
+        #      - AttributeName: 'req_at'
+        #        KeyType: RANGE
 
   Outputs:
     TableNameARN:

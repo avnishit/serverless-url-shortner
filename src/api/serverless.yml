@@ -1,4 +1,6 @@
 service: ${self:custom.project.name}
+app: ${file(./serverless.js):project.app}
+tenant: ${file(./serverless.js):project.tenant}
 
 provider:
   name: aws
@@ -33,20 +35,38 @@ custom:
     packager: 'npm'
 
 functions:
-  insertItem:
-    handler: functions/insertItem/index.handler
+  getHash:
+    handler: functions/getHash/index.handler
     events:
       - http:
-          path: insertItem
+          path: hash
           method: post
-    memorySize: 3008
-    timeout: 5
+          memorySize: 1024
+          timeout: 5
 
-  getItem:
-    handler: functions/getItem/index.handler
+  getStatByHash:
+    handler: functions/getStatByHash/index.handler
     events:
       - http:
-          path: getItem
+          path: stats/hash
+          method: post
+          memorySize: 3008
+          timeout: 5
+
+  getStatByUrl:
+    handler: functions/getStatByUrl/index.handler
+    events:
+      - http:
+          path: stats/url
+          method: post
+          memorySize: 3008
+          timeout: 25
+
+  getUrl:
+    handler: functions/getUrl/index.handler
+    events:
+      - http:
+          path: url
           method: get
-    memorySize: 3008
-    timeout: 5
+          memorySize: 1024
+          timeout: 100

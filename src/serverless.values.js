@@ -5,14 +5,16 @@
 const GROUP_NAME = 'dh';
 
 /** Default project name */
-const PROJECT_NAME = `${GROUP_NAME}--bkn-tst`;
+const PROJECT_NAME = `${GROUP_NAME}-bkn-tst`;
+const SLS_APP_NAME = 'url-short-01';
+const SLS_TENANT = 'avnishchandrasuman';
 
 /** Project name for resources disallowing "-" */
 const PROJECT_NAME_LOW_DASH = `${GROUP_NAME}__bkn_tst`;
 
 const PROVIDER_NAME = 'aws';
 const DEFAULT_RUNTIME = 'nodejs8.10';
-const DEFAULT_REGION = 'eu-west-1';
+const DEFAULT_REGION = 'us-west-2';
 
 /** Deployment stages */
 const STAGES = {
@@ -28,17 +30,19 @@ const STAGES = {
  * @param {string} folder
  */
 const project = (serverless /* :any */, folder /* :string */) => {
-  const stackPrefix = `${PROJECT_NAME}--${getStage(serverless)}`;
+  const stackPrefix = `${PROJECT_NAME}-${getStage(serverless)}`;
   const stackPrefixLowDash = `${PROJECT_NAME_LOW_DASH}__${getStage(
     serverless,
   )}`;
 
   return {
-    name: `${PROJECT_NAME}--${folder}`,
+    app: SLS_APP_NAME,
+    tenant: SLS_TENANT,
+    name: `${PROJECT_NAME}-${folder}`,
     nameLowDash: `${PROJECT_NAME_LOW_DASH}__${folder}`,
     stackPrefix,
     stackPrefixLowDash,
-    stackName: `${stackPrefix}--${folder}`,
+    stackName: `${stackPrefix}-${folder}`,
     stackNameLowDash: `${stackPrefixLowDash}__${folder}`,
   };
 };

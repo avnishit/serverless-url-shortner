@@ -4,8 +4,11 @@ import AWS from 'aws-sdk';
 
 import { Tables } from '../serverless';
 
-import getItem from './getItem';
-import insertItem from './insertItem';
+import getUrl from './getUrl';
+import getHash from './getHash';
+import saveStat from './saveStat';
+import getStatsByHash from './getStatsByHash';
+import getStatsByUrl from './getStatsByUrl';
 
 /** Gets imported and used by all subtables */
 export let DocumentClient = new AWS.DynamoDB.DocumentClient();
@@ -16,9 +19,9 @@ export let { name: TableName, index: TableIndex } = Tables().TableName;
 // Connects to a local database
 export const setDBToLocalTestMode = (stage: string) => {
   AWS.config.update({
-    accessKeyId: 'localAccessKey',
-    secretAccessKey: 'localSecretAccessKey',
-    region: 'localRegion',
+    accessKeyId: '',
+    secretAccessKey: '',
+    region: 'us-west-2',
   });
 
   const host = process.env.DYNAMO_DB_HOST || 'localhost';
@@ -48,4 +51,4 @@ if (process.env.LOCAL_DEV) {
   setDBToLocalTestMode('localdev');
 }
 
-export default { getItem, insertItem };
+export default { getUrl, getHash, saveStat, getStatsByHash, getStatsByUrl };

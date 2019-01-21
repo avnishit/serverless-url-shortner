@@ -1,5 +1,4 @@
 set -e
-
 # Package and go
 npm run sls:package -- ${@}
 

@@ -1,6 +1,5 @@
 /**
  * @author Philipp Beau <philipp@dathuis.nl>
- *
  * Database Utils
  */
 
@@ -28,7 +27,6 @@ const generateUuid = () => {
 
 /**
  * Checks a given string to be a valid uuid
- *
  * @param {string} id
  */
 const isId = (id: string): boolean => {

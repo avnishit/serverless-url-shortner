@@ -21,7 +21,7 @@ module.exports = {
     'no-unused-vars': ['error', { args: 'all', argsIgnorePattern: '^_' }],
     'linebreak-style': ['error', 'unix'],
     quotes: 'off',
-    'no-console': ['error', { allow: ['warn', 'error'] }],
+    'no-console': ['warn', { allow: ['warn', 'error'] }],
     semi: ['error', 'always'],
     'react/display-name': 'off',
     'flowtype/generic-spacing': 'off',
