@@ -19,8 +19,8 @@ export let { name: TableName, index: TableIndex } = Tables().TableName;
 // Connects to a local database
 export const setDBToLocalTestMode = (stage: string) => {
   AWS.config.update({
-    accessKeyId: '',
-    secretAccessKey: '',
+    accessKeyId: 'AKIAIV6KCLGZJXPN5TQQ',
+    secretAccessKey: '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',
     region: 'us-west-2',
   });
 

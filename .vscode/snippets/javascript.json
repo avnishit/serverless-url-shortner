@@ -4,7 +4,7 @@
       "prefix": "jesttest",
       "body": [
         "/**",
-        "* @author Philipp Beau <philipp@dathuis.nl>",
+        "* @author Avnish Chandra Suman <avnishchandrasuman@gmail.com>",
         "*",
         "*/",
         "/* @flow */",
